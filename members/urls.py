@@ -2,8 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns=[
-    path('admin/create_member/', views.create_member), #POST, {name, discord, github, email, group}
-    path('admin/delete_member/', views.delete_member), #POST, {name: }
+    path('admin/create_member/', views.create_member), #POST, {'name', 'discord','github' , 'email', 'group'}
+    path('admin/delete_member/', views.delete_member), #POST, {'name': }
     path('member/send_email/', views.mail_member), #POST, {'email': }
     path('member/verify_otp/', views.verify_otp), #POST, {'otp': }
     path('member/member_details/', views.member_details), #POST
