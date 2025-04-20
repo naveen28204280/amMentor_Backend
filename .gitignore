@@ -1,0 +1,65 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Django-specific
+*.log
+*.pot
+*.mo
+*.pyc
+*.sqlite3
+db.sqlite3
+*.db
+
+# Migrations cache (but keep actual .py migration files)
+**/migrations/__pycache__/
+**/migrations/*.pyc
+
+# Environment variables
+.env
+.env.*
+secrets.env
+
+# Virtual environment folders
+.venv/
+venv/
+ENV/
+env/
+
+# Static and media folders (optional — these are often generated)
+staticfiles/
+media/
+static_root/
+static_cdn/
+
+# Node modules (if you use npm/yarn for frontend inside Django)
+node_modules/
+
+# Coverage and test output
+htmlcov/
+.coverage
+.tox/
+.nox/
+.cache/
+pytest_cache/
+nosetests.xml
+junit-*.xml
+
+# IDE/editor configs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Pip logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# GitHub/CI
+.github/*.DS_Store
