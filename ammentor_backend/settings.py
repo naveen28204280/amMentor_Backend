@@ -83,6 +83,16 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'USER' : os.getEnviron.get('SQL_USER'),
+#         'PASSWORD' : os.getEnviron.get('SQL_PASSWORD'),
+#         'NAME': os.getEnviron.get('SQL_NAME'),
+#         'HOST': os.getEnviron.get('SQL_HOST'),
+#         'PORT': os.getEnviron.get('SQL_PORT'),
+#             }
+# }
 
 
 # Password validation
