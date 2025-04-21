@@ -62,4 +62,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # GitHub/CI
-.github/*.DS_Store
+.github/*.DS_Store__pycache__/
+
+*.pyc
+__pycache__/
