@@ -90,9 +90,16 @@ def select_track(request):
             return JsonResponse({"error": "Missing required fields"}, status=400)
         member=Members.objects.get(name=data['member'])
         track=Tracks.objects.get(track=data['track'])
-        member.track= track
-        member.save()
-        return JsonResponse({"Succesfully changed track": data['track']}, status=200)
+        if member.track==None:
+            member.track= track
+            member.save()
+            return JsonResponse({"Succesfully changed track": data['track']}, status=200)
+        else:
+            current_track=member.track
+            tasks=Tasks.objects.filter(track=current_track)
+            for task in tasks:
+                if Curriculum.objects.filter(member=member, task=task,end__isnull=True).exists():
+                    return JsonResponse({'error': 'Please finish your current track first'}, status=400)
     except Tracks.DoesNotExist:
         return JsonResponse({"error": "Track not found"}, status=404)
     except Members.DoesNotExist:
@@ -173,15 +180,27 @@ def start_task(request):
         if not all(t in data for t in ['task_name', 'task_num', 'member']):
             return JsonResponse({'error': 'Missing required fields'}, status=400)
         member = Members.objects.get(name=data['member'])
-        track=member.track
-        task=Tasks.objects.get(task_name=data['task_name'], task_num=data['task_num'], track=track)
-        if not task:
-            return JsonResponse({'error': 'Task not found'}, status=404)
-        Curriculum.objects.create(
-            member=member,
-            task=task,
-        )
-        return JsonResponse({"Started Task: ": data['task_name']}, status=200)
+        incomplete_submission=Submissions.objects.get(member=member, sub_url__isnull=False, feedback__isnull=True, pause_end__isnull=True)
+        if not incomplete_submission:
+            track=member.track
+            task=Tasks.objects.get(task_name=data['task_name'], task_num=data['task_num'], track=track)
+            previous_tasks = Tasks.objects.filter(track=track, task_num__lt=task.task_num)
+            incomplete_prev=[]
+            for prev in previous_tasks:
+                curriculum = Curriculum.objects.filter(member=member, task=prev).first()
+                if not curriculum or not curriculum.end:
+                    incomplete_prev.append(prev.task_name)
+            if incomplete_prev:
+                return JsonResponse({'error': 'One of the previous tasks has not been completed'}, status=400)
+            if not task:
+                return JsonResponse({'error': 'Task not found'}, status=404)
+            Curriculum.objects.create(
+                member=member,
+                task=task,
+            )
+            return JsonResponse({"Started Task: ": data['task_name']}, status=200)
+        else:
+            return JsonResponse({"Get your previous task reviewed first please": incomplete_submission.task_name})
     except Tracks.DoesNotExist:
         return JsonResponse({"error": "Track not found"}, status=404)
     except Members.DoesNotExist:
@@ -189,7 +208,7 @@ def start_task(request):
     except Tasks.DoesNotExist:
         return JsonResponse({"error": "Tasks not found"}, status=404)
     except Exception as e:
-        return JsonResponse({"error": f'{e}'}, status=500)
+        return JsonResponse({"error": e}, status=500)
     
 def pause_task(request):
     try:
