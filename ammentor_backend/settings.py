@@ -86,6 +86,10 @@ DATABASES = {
         "PORT": os.getenv("SQL_PORT"),
     }
 }
+
+STATIC_URL = '/static/'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
