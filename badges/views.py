@@ -19,7 +19,7 @@ def make_badge(request):
             badge=data['badge'],
             icon=data['icon']
         ) 
-        return JsonResponse({f'Successfully created':  data["badge"]}, status=200)
+        return JsonResponse({'Successfully created':  data["badge"]}, status=200)
     except Exception as e:
         return JsonResponse({"error found: ": e}, status=500)
     
@@ -52,7 +52,7 @@ def assign_badge(request):
             )
             return JsonResponse({'Succesfully assigned badge': data['badge']}, status=200)
         else:
-            return JsonResponse({'error': f'{data['member']} already has this badge'})
+            return JsonResponse({'error': f"{data['member']} already has this badge"})
     except Exception as e:
         return JsonResponse({"error found: ": e}, status=500)
     

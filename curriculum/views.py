@@ -21,7 +21,7 @@ def create_track(request):
         )
         return JsonResponse({"Successfully created": f"{data['track']}"}, status=200)
     except Exception as e:
-        return JsonResponse({"error": f'{e}'}, status=500)
+        return JsonResponse({"error": e}, status=500)
     
 def delete_track(request):
     if not request.user.is_superuser:
