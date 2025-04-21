@@ -1,24 +1,24 @@
-FROM python:3.11-slim
+FROM python:3.11.4-slim-bullseye
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+#environment variables
 
-WORKDIR /app
+#this varibale right here will tell python intrepreter to not buffer the output.....makes the error go to log in case the container shuts down we can go to the log to check where the error has occured
+ENV PYTHONUNBUFFERED=1 
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    curl \
-    netcat \
-    && rm -rf /var/lib/apt/lists/*
-    
-COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+# and this variable will be telling the python interpreter to not write .pyc files on the import of a module ( search what are .pyc files if you dont know what they are)
+ENV PYTHONDONTWRITEBYTECODE=1 
 
-COPY . .
+# this will be the working directory for the container
+WORKDIR /app 
 
-RUN mkdir -p /vol/web/static /vol/web/media
 
-EXPOSE 8000
 
-CMD ["gunicorn", "ammentor_backend.wsgi:application", "--bind", "0.0.0.0:8000"]
+RUN apt-get update
+
+COPY ./requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY ./start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+COPY . /app/
