@@ -15,13 +15,13 @@ def create_track(request):
     try:
         data=json.loads(request.body)
         if not data['track']:
-            return JsonResponse({'error': e})
+            return JsonResponse({'error': "Track Not Found"}, status=404)
         Tracks.objects.create(
             track=data['track'],
         )
         return JsonResponse({"Successfully created": f"{data['track']}"}, status=200)
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
     
 def delete_track(request):
     if not request.user.is_superuser:
@@ -35,7 +35,7 @@ def delete_track(request):
         del_track.delete()
         return JsonResponse({'Successfully deleted': data['track']}, status=200)
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
     
 def create_task(request):
     if not request.user.is_superuser:
@@ -74,14 +74,14 @@ def delete_task(request):
         task.delete()
         return JsonResponse({"Succesfully deleted": task_name})
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
     
 def display_tracks(request):
     try:
         tracks=Tracks.objects.all().values_list('track', flat=True)
         return JsonResponse({"tracks": list(tracks)}, status=200)
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
     
 def select_track(request):
     try:
@@ -105,9 +105,9 @@ def select_track(request):
     except Members.DoesNotExist:
         return JsonResponse({"error": "Member not found"}, status=404)
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
 
-def display_all_tasks(request):
+def display_member_tasks(request):
     try:
         data = json.loads(request.body)
         if not data.get('member'):
@@ -131,13 +131,33 @@ def display_all_tasks(request):
                 'points': task.points,
                 'deadline': task.deadline,
                 'status': status if curriculum_row else "upcoming",
-                'track': member.track.track
+                'track': task.track.track
             })
         return JsonResponse({"tasks": tasks_data}, status=200)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
     except Tracks.DoesNotExist:
         return JsonResponse({'error': 'No such track found'}, status=404)
+    
+def display_track_tasks(request):
+    try:
+        data=json.loads(request.body)
+        if not data['track']:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        track=Tracks.objects.get(track=data['track'])
+        tasks=Tasks.objects.filter(track=track)
+        track_tasks=[]
+        for task in tasks:
+            track_tasks.append({
+                'task_name': task.task_name,
+                'task_num': task.task_num,
+                'points': task.points,
+                'deadline': task.deadline,
+                'track': task.track.track
+            })
+        return JsonResponse(track_tasks, status=200)
+    except Exception as e:
+        return JsonResponse({'error': e}, status=500)
 
 def display_task_details(request):
     try:
@@ -208,7 +228,7 @@ def start_task(request):
     except Tasks.DoesNotExist:
         return JsonResponse({"error": "Tasks not found"}, status=404)
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
     
 def pause_task(request):
     try:
@@ -225,7 +245,7 @@ def pause_task(request):
         )
         return JsonResponse({'paused': task.task_name})
     except Exception as e:
-        return JsonResponse({'error': e}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
     except Members.DoesNotExist:
         return JsonResponse({'error': 'Mentor or Mentee not found'}, status=404)
     except Tasks.DoesNotExist:
@@ -245,7 +265,7 @@ def resume_task(request):
         submission.save()
         return JsonResponse({'resumed': task.task_name}, status=200)
     except Exception as e:
-        return JsonResponse({'error': e}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
     except Submissions.DoesNotExist:
         return JsonResponse({'error': 'No paused submission found for this task'}, status=404)
     except Members.DoesNotExist:
@@ -268,7 +288,7 @@ def mentee_submission(request):
         )
         return JsonResponse({"Succesfully submitted": data['task_name']}, status=200)
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
 
 def pending_review(request):
     try:
@@ -291,7 +311,7 @@ def pending_review(request):
         else:
             return JsonResponse({False: 'No pending reviews'}, status=200)
     except Exception as e:
-        return JsonResponse({'error': e}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
 
 def display_submission(request):
     try:
@@ -318,7 +338,7 @@ def display_submission(request):
         else:
             return JsonResponse({'message': 'No pending reviews'}, status=200)
     except Exception as e:
-        return JsonResponse({'error': e}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
 
 def mentor_eval(request):
     try:

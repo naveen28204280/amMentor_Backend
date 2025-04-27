@@ -33,7 +33,7 @@ def create_member(request):
             )
             return JsonResponse({"Added member: ": name}, status=200)
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
     
 def delete_member(request):
     if not request.user.is_superuser:
@@ -42,48 +42,12 @@ def delete_member(request):
         data=json.loads(request.body)
         member=data['member']
         if not Members.objects.filter(name=member['name']):
-            return JsonResponse({'error: ': 'Member not found'}, status=400)
+            return JsonResponse({'error': 'Member not found'}, status=400)
         else:
             Members.objects.filter(name=member['name']).delete()
-            return HttpResponse(f"{member['username']} has been removed")
+            return JsonResponse({'Removed member': data['member']}, status=200)
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
-
-def mail_member(request):
-    try:
-        data=json.loads(request.body)
-        if not data['email']:
-            return JsonResponse({"error": "Missing required fields"}, status=400)
-        otp=random.randint(100000,999999)
-        request.session['otp'] = str(otp)
-        request.session['email'] = data['email']
-        send_mail(
-            subject="OTP for amMentor login",
-            message=f"{otp} is your OTP for logging in to amMentor",
-            from_email="our_email@gmail.com", #amFOSS mail
-            recipient_list=[data['email']],
-            fail_silently=False,
-        )
-        return JsonResponse({"Successfully sent OTP": "Sent OTP"}, status=200)
-    except Exception as e:
-        return JsonResponse({"error": e}, status=500)
-    
-def verify_otp(request):
-    try:
-        data = json.loads(request.body)
-        if not data.get('otp'):
-            return JsonResponse({"error": "Missing OTP"}, status=400)
-        session_otp = request.session.get('otp')
-        email=request.session.get('email')
-        if session_otp and data['otp'] == session_otp:
-            user = Members.objects.get(email=email)
-            if user:
-                login(request,User)
-                return JsonResponse({"verified": True}, status=200)
-            else:
-                return JsonResponse({"verified": False}, status=401)
-    except Exception as e:
-        return JsonResponse({"error": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)    
     
 def member_details(request):
     try:
@@ -109,16 +73,11 @@ def member_details(request):
         }
         return JsonResponse(member_data, status=200)
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
-    
-def logout_user(request):
-    if request.user.is_authenticated:
-        logout(request)
-        return JsonResponse({"message": "Successfully logged out"}, status=200)
-    else:
-        return JsonResponse({"error": "User is not logged in"}, status=400)
+        return JsonResponse({"error": str(e)}, status=500)
 
 def assign_mentor(request):
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Only superusers can assign mentors'}, status=403)
     try:
         data=json.loads(request.body)
         if not all(i in data for i in ['mentor', 'mentee']):
@@ -131,7 +90,7 @@ def assign_mentor(request):
         mentee.save()
         return JsonResponse({'Successfully assigned': data['mentor']}, status=200)
     except Exception as e:
-        return JsonResponse({'error': e})
+        return JsonResponse({'error': str(e)})
 
 def select_track(request):
     try:
@@ -144,7 +103,61 @@ def select_track(request):
         member.save()
         return JsonResponse({'success': 'Updated track'}, status=200)
     except Exception as e:
-        return JsonResponse({'error': e}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
+    
+def mentee_details(request):
+    try:
+        data=json.loads(request.body)
+        if not data['mentor']:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        mentor=Members.objects.get(name=data['mentor'])
+        mentee=mentor.mentee
+        mentee_details={
+            "name": mentee.name,
+            "discord": mentee.discord,
+            "github": mentee.github,
+            "points": mentee.points,
+            "group": mentee.group,
+            "pfp": mentee.pfp.url,
+            "track": mentee.track.track
+        }
+        return JsonResponse(mentee_details, status=200)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def mentee_tasks(request):
+    from curriculum.models import Curriculum, Tasks
+    try:
+        data = json.loads(request.body)
+        if not data.get('mentor'):
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+        mentor = Members.objects.get(name=data['mentor'])
+        mentee=mentor.mentee
+        track=mentee.track
+        tasks = Tasks.objects.filter(track=track)
+        tasks_data = []
+        for task in tasks:
+            curriculum_row = Curriculum.objects.filter(task=task, member=mentee).first()
+            if curriculum_row:
+                if curriculum_row.end:
+                    status = 'finished'
+                elif curriculum_row.start:
+                    status = 'ongoing'
+                else:
+                    status = 'upcoming'
+            tasks_data.append({
+                'task_name': task.task_name,
+                'task_num': task.task_num,
+                'points': task.points,
+                'deadline': task.deadline,
+                'status': status if curriculum_row else "upcoming",
+                'track': mentee.track.track
+            })
+        return JsonResponse({"tasks": tasks_data}, status=200)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    except Tracks.DoesNotExist:
+        return JsonResponse({'error': 'No such track found'}, status=404)
     
 def customize(request):
     try:
@@ -159,7 +172,7 @@ def customize(request):
         member.save()
         return JsonResponse({'message': 'Profile updated'}, status=200)
     except Exception as e:
-        return JsonResponse({'error': e}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
     
 def leaderboard_points(request):
     try:
@@ -167,4 +180,4 @@ def leaderboard_points(request):
         data = [{'name': member.name, 'points': member.points} for member in members]
         return JsonResponse(data, safe=False, status=200)
     except Exception as e:
-        return JsonResponse({'error': e}, status=500)
+        return JsonResponse({'error': str(e)}, status=500)

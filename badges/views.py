@@ -10,20 +10,22 @@ User = get_user_model()
 # Create your views here.
 def make_badge(request):
     if not request.user.is_superuser:
-        return JsonResponse({"error": "Only superusers can delete badges"}, status=403)
+        return JsonResponse({"error": "Only superusers can make badges"}, status=403)
     try:
         data=json.loads(request.body)
         if not all(b in data for b in ['badge', 'icon']):
-            return JsonResponse({'error: ': 'Missing required fields'}, status=400)
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
         Badges.objects.create(
             badge=data['badge'],
             icon=data['icon']
         ) 
         return JsonResponse({'Successfully created':  data["badge"]}, status=200)
     except Exception as e:
-        return JsonResponse({"error found: ": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
     
 def delete_badge(request):
+    if not request.is_superuser:
+        return JsonResponse({"error": "Only superusers can delete badges"}, status=403)
     try:
         data=json.loads(request.body)
         if not data['badge']:
@@ -65,4 +67,4 @@ def badges_earned(request):
         badges=Badges_Members.objects.filter(member=member).values_list('badge__badge', flat=True)
         return JsonResponse({"badges earned": list(badges)}, status=200)
     except Exception as e:
-        return JsonResponse({"error": e}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
